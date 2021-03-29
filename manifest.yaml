@@ -38,6 +38,6 @@ actions:
         sed -i 's/localhost:8081/${nodes.cp.extips}:8081/g' config.json
         docker-compose up --build -d
       user: root
-
-    success: |
+ 
+  success: |
       The Node is installed and available here **[{{URI}}/dashboard]({{URI}}/dashboard)**.

@@ -19,6 +19,7 @@ nodes:
   nodeType: dockerengine
   env: 
       JELASTIC_EXPOSE: 8081
+      JELASTIC_PORTS: 8081, 80
 
 onInstall:
   - setupNode
@@ -36,6 +37,9 @@ actions:
         chown 39999:39999 -R mainnetdb
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
         sed -i 's/localhost:8081/${nodes.cp.extips}:8081/g' config.json
+        iptables -F 
+        iptables -I PREROUTING -p tcp -m tcp --dport 80 -m comment --comment "IOTA Node" -j REDIRECT --to-ports 8081
+        service iptables save
         docker-compose up --build -d
       user: root
  

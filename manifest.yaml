@@ -1,0 +1,43 @@
+type: install
+version: 1.4
+
+id: iota
+name: IOTA Node
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/iota-node/main
+logo: images/iota-logo.png
+
+homepage: https://www.iota.org/
+description:
+  short: IOTA’s Tangle is an open, feeless and scalable distributed ledger.
+  text: |
+    IOTA’s Tangle is an open, feeless and scalable distributed ledger, designed to support frictionless data and value transfer.
+
+nodes:
+- cloudlets: 16
+  nodeGroup: cp
+  extip: true
+  nodeType: dockerengine
+  env: 
+      JELASTIC_EXPOSE: 8081
+
+onInstall:
+  - setupNode
+
+actions:
+  setupNode:
+    - cmd [cp]: |-
+        git clone https://github.com/gohornet/hornet
+        cd hornet
+        mkdir mainnetdb
+        mkdir -p snapshots/mainnet
+        mkdir -p snapshots/devnet
+        mkdir -p snapshots/comnet
+        chown 39999:39999 -R snapshots
+        chown 39999:39999 -R mainnetdb
+        sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
+        sed -i 's/localhost:8081/${nodes.cp.extips}:8081/g' config.json
+        docker-compose up --build -d
+      user: root
+
+    success: |
+      The Node is installed and available here **[{{URI}}/dashboard]({{URI}}/dashboard)**.

@@ -18,6 +18,7 @@ nodes:
   extip: true
   nodeType: dockerengine
   env: 
+      JELASTIC_PRIORITY_PORTS: 8081
       JELASTIC_EXPOSE: 8081
       JELASTIC_PORTS: 8081, 80
 
@@ -39,7 +40,7 @@ actions:
         sed -i 's/localhost:8081/${nodes.cp.extips}:8081/g' config.json
         iptables -P INPUT ACCEPT
         iptables -F 
-        iptables -I PREROUTING -p tcp -m tcp --dport 80 -m comment --comment "IOTA Node" -j REDIRECT --to-ports 8081
+        iptables -t nat -I PREROUTING -p tcp -m tcp --dport 80 -m comment --comment "IOTA Node" -j REDIRECT --to-ports 8081
         service iptables save
         docker run -d --restart=always -v $(pwd)/config.json:/app/config.json:ro -v $(pwd)/peering.json:/app/peering.json -v $(pwd)/mainnetdb:/app/mainnetdb --name hornet --net=host gohornet/hornet:latest
       user: root

@@ -4,7 +4,7 @@ version: 1.4
 id: iota
 name: IOTA Node
 baseUrl: https://raw.githubusercontent.com/jelastic-jps/iota-node/main
-logo: images/iota-logo.png
+logo: images/iota-logo.svg?sanitize=true
 
 homepage: https://www.iota.org/
 description:
@@ -30,14 +30,15 @@ actions:
     - cmd [cp]: |-
         git clone https://github.com/gohornet/hornet
         cd hornet
-        mkdir mainnetdb
-        mkdir -p snapshots/mainnet
-        mkdir -p snapshots/devnet
-        mkdir -p snapshots/comnet
-        chown 39999:39999 -R snapshots
-        chown 39999:39999 -R mainnetdb
+        mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}
+        chown 39999:39999 -R snapshots mainnetdb
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
         sed -i 's/localhost:8081/${nodes.cp.extips}:8081/g' config.json
+        docker-compose up -d
+        until [ "`/usr/bin/docker inspect -f {{.State.Running}} hornet`"=="true" ]; do
+          sleep 1
+          print '.'
+        done;
         iptables -P INPUT ACCEPT
         iptables -F 
         iptables -t nat -I PREROUTING -p tcp -m tcp --dport 80 -m comment --comment "IOTA Node" -j REDIRECT --to-ports 8081

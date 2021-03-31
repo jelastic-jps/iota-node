@@ -17,10 +17,6 @@ nodes:
   nodeGroup: cp
   extip: true
   nodeType: dockerengine
-  env: 
-      JELASTIC_PRIORITY_PORTS: 8081
-      JELASTIC_EXPOSE: 8081
-      JELASTIC_PORTS: 8081, 80
 
 onInstall:
   - setupNode
@@ -33,8 +29,20 @@ actions:
         mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}
         chown 39999:39999 -R snapshots mainnetdb
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
-        sed -i 's/localhost:8081/${nodes.cp.extips}:80/g' config.json
+        sed -i 's/localhost:8081/${nodes.cp.extips}:8081/g' config.json
+        iptables -P INPUT ACCEPT
+        iptables -F 
+        iptables -t nat -I PREROUTING -p tcp -m tcp --dport 80 -m comment --comment "IOTA Node" -j REDIRECT --to-ports 8081
+        service iptables save
+        echo "Km5hdAo6UFJFUk9VVElORyBBQ0NFUFQgWzA6MF0KOlBPU1RST1VUSU5HIEFDQ0VQVCBbMDowXQo6T1VUUFVUIEFDQ0VQVCBbMDowXQotQSBQUkVST1VUSU5HIC1wIHRjcCAtbSB0Y3AgLS1kcG9ydCA4MCAtbSBjb21tZW50IC0tY29tbWVudCAiSU9UQSBOb2RlIiAtaiBSRURJUkVDVCAtLXRvLXBvcnRzIDgwODEKQ09NTUlUCg==" | base64 -d  > /etc/sysconfig/iptables-custom
         docker run -d --restart=always -v $(pwd)/config.json:/app/config.json:ro -v $(pwd)/peering.json:/app/peering.json -v $(pwd)/mainnetdb:/app/mainnetdb --name hornet --net=host gohornet/hornet:latest
+        echo "Downloading data: "
+        while true; do
+            netstat -nlpt | grep -q 8081
+            [ $? -eq 0 ] && break
+            echo  -n "."
+            sleep 1
+        done
       user: root
  
   success: |

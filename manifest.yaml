@@ -12,6 +12,11 @@ description:
   text: |
     IOTA’s Tangle is an open, feeless and scalable distributed ledger, designed to support frictionless data and value transfer.
 
+globals:
+  user: admin
+  password: ${fn.password}
+  salt: setcretsalt
+
 nodes:
 - cloudlets: 16
   nodeGroup: cp
@@ -28,6 +33,7 @@ actions:
         yum install -y jq
         cd hornet
         password=$(python -c "import crypt, getpass, pwd; print crypt.crypt('${globals.password}', '\$6\$' + '${globals.salt}' + '\$')")
+        [ -z $password ] && { echo "Could not generate hash" ;exit 1; };
         jq --arg PASSWORD "${password}" '.dashboard.basicAuth.enabled = true | .dashboard.basicAuth.username = "${globals.user}" | .dashboard.basicAuth.passwordHash = $PASSWORD | .dashboard.basicAuth.passwordSalt = "${globals.salt}"'   config.json > config.json.modifed
         [ -f "config.json.modifed" ] && mv config.json.modifed config.json
         mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}

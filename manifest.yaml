@@ -25,7 +25,11 @@ actions:
   setupNode:
     - cmd [cp]: |-
         git clone https://github.com/gohornet/hornet
+        yum install -y jq
         cd hornet
+        password=$(python -c "import crypt, getpass, pwd; print crypt.crypt('${globals.password}', '\$6\$' + '${globals.salt}' + '\$')")
+        jq --arg PASSWORD "${password}" '.dashboard.basicAuth.enabled = true | .dashboard.basicAuth.username = "${globals.user}" | .dashboard.basicAuth.passwordHash = $PASSWORD | .dashboard.basicAuth.passwordSalt = "${globals.salt}"'   config.json > config.json.modifed
+        [ -f "config.json.modifed" ] && mv config.json.modifed config.json
         mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}
         chown 39999:39999 -R snapshots mainnetdb
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
@@ -47,3 +51,6 @@ actions:
  
   success: |
       The Node is installed and available here **[{{URI}}/dashboard]({{URI}}/dashboard)**.
+      **User**: ${globals.user}  
+      **Password**: ${globals.password} 
+

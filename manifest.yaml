@@ -24,9 +24,10 @@ nodes:
   nodeType: dockerengine
 
 onInstall:
+  - runLEConpanion
   - setupNode
   - runNode
-  - runLEConpanion
+
 
 actions:
   setupNode:
@@ -50,7 +51,7 @@ actions:
   runLEConpanion:
     - cmd [cp]: |-
          mkdir -p /app
-         wget ${baseUrl}/templates/nginx.tpl -O /app/nginx.tpl
+         wget ${baseUrl}/templates/nginx.tmpl -O /app/nginx.tmpl
          docker run --detach \
           --name nginx-proxy \
           --net=host \
@@ -67,6 +68,7 @@ actions:
           --volume /var/run/docker.sock:/var/run/docker.sock:ro \
           --volume acme:/etc/acme.sh \
           --env "DEFAULT_EMAIL=${user.email}" \
+          --env "CERTS_UPDATE_INTERVAL=60" \
           jrcs/letsencrypt-nginx-proxy-companion
     
   
@@ -77,9 +79,9 @@ actions:
         -v $(pwd)/config.json:/app/config.json:ro \
         -v $(pwd)/peering.json:/app/peering.json \
         -v $(pwd)/mainnetdb:/app/mainnetdb \
-        --env "VIRTUAL_HOST=${env.domain}"  \
-        --env "LETSENCRYPT_HOST=${env.domain}"  \
-        --env "LETSENCRYPT_TEST=true"
+        --env "VIRTUAL_HOST=${env.domain}" \
+        --env "LETSENCRYPT_HOST=${env.domain}" \
+        --env "LETSENCRYPT_TEST=true" \
         --env "VIRTUAL_PORT=8081" \
         --name hornet \
         --net=host gohornet/hornet:latest

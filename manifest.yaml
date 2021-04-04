@@ -26,6 +26,7 @@ nodes:
 onInstall:
   - setupNode
   - runNode
+  - runLEConpanion
 
 actions:
   setupNode:
@@ -40,19 +41,49 @@ actions:
         mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}
         chown 39999:39999 -R snapshots mainnetdb
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
-        sed -i 's/localhost:8081/${nodes.cp.extips}:8081/g' config.json
         iptables -P INPUT ACCEPT
         iptables -F 
-        iptables -t nat -I PREROUTING -p tcp -m tcp --dport 80 -m comment --comment "IOTA Node" -j REDIRECT --to-ports 8081
-        service iptables save
-        echo "Km5hdAo6UFJFUk9VVElORyBBQ0NFUFQgWzA6MF0KOlBPU1RST1VUSU5HIEFDQ0VQVCBbMDowXQo6T1VUUFVUIEFDQ0VQVCBbMDowXQotQSBQUkVST1VUSU5HIC1wIHRjcCAtbSB0Y3AgLS1kcG9ydCA4MCAtbSBjb21tZW50IC0tY29tbWVudCAiSU9UQSBOb2RlIiAtaiBSRURJUkVDVCAtLXRvLXBvcnRzIDgwODEKQ09NTUlUCg==" | base64 -d  > /etc/sysconfig/iptables-custom
+        service iptables save      
 
       user: root
+  
+  runLEConpanion:
+    - cmd [cp]: |-
+         mkdir -p /app
+         wget ${baseUrl}/templates/nginx.tpl -O /app/nginx.tpl
+         docker run --detach \
+          --name nginx-proxy \
+          --net=host \
+          --volume certs:/etc/nginx/certs \
+          --volume vhost:/etc/nginx/vhost.d \
+          --volume html:/usr/share/nginx/html \
+          --volume /app/nginx.tpl:/app/nginx.tpl:ro \
+          --volume /var/run/docker.sock:/tmp/docker.sock:ro \
+          jwilder/nginx-proxy
+  
+         docker run --detach \
+          --name nginx-proxy-letsencrypt \
+          --volumes-from nginx-proxy \
+          --volume /var/run/docker.sock:/var/run/docker.sock:ro \
+          --volume acme:/etc/acme.sh \
+          --env "DEFAULT_EMAIL=${user.email}" \
+          jrcs/letsencrypt-nginx-proxy-companion
+    
   
   runNode:
     - cmd [cp]: |-
         cd hornet
-        docker run -d --restart=always -v $(pwd)/config.json:/app/config.json:ro -v $(pwd)/peering.json:/app/peering.json -v $(pwd)/mainnetdb:/app/mainnetdb --name hornet --net=host gohornet/hornet:latest
+        docker run -d --restart=always \
+        -v $(pwd)/config.json:/app/config.json:ro \
+        -v $(pwd)/peering.json:/app/peering.json \
+        -v $(pwd)/mainnetdb:/app/mainnetdb \
+        --env "VIRTUAL_HOST=${env.domain}"  \
+        --env "LETSENCRYPT_HOST=${env.domain}"  \
+        --env "LETSENCRYPT_TEST=true"
+        --env "VIRTUAL_PORT=8081" \
+        --name hornet \
+        --net=host gohornet/hornet:latest
+
         echo "Downloading data: "
         while true; do
             netstat -nlpt | grep -q 8081
@@ -64,7 +95,7 @@ actions:
       user: root
       
 success: |-
-  The Node is installed and available here **http://${env.domain}/dashboard](http://${env.domain}/dashboard)**.
-  Admin Username : ${globals.user}    
-  Admin Password : ${globals.password}  
+  **Dashboard**: [https://${env.domain}](https://${env.domain}/dashboard)  
+  **Username** : ${globals.user}    
+  **Password** : ${globals.password}  
 

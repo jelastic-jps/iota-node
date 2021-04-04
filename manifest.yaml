@@ -25,6 +25,7 @@ nodes:
 
 onInstall:
   - setupNode
+  - runNode
 
 actions:
   setupNode:
@@ -32,9 +33,9 @@ actions:
         git clone https://github.com/gohornet/hornet
         yum install -y jq
         cd hornet
-        password=$(python -c "import crypt, getpass, pwd; print crypt.crypt('${globals.password}', '\$6\$' + '${globals.salt}' + '\$')")
-        [ -z $password ] && { echo "Could not generate hash" ;exit 1; };
-        jq --arg PASSWORD "${password}" '.dashboard.basicAuth.enabled = true | .dashboard.basicAuth.username = "${globals.user}" | .dashboard.basicAuth.passwordHash = $PASSWORD | .dashboard.basicAuth.passwordSalt = "${globals.salt}"'   config.json > config.json.modifed
+        pHash=$(python -c "from hashlib import sha256; print sha256('${globals.password}' + '${globals.salt}').hexdigest();")
+        [ -z $pHash ] && { echo "Could not generate hash" ;exit 1; };
+        jq --arg PASSWORD "${pHash}" '.dashboard.basicAuth.enabled = true | .dashboard.basicAuth.username = "${globals.user}" | .dashboard.basicAuth.passwordHash = $PASSWORD | .dashboard.basicAuth.passwordSalt = "${globals.salt}"'   config.json > config.json.modifed
         [ -f "config.json.modifed" ] && mv config.json.modifed config.json
         mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}
         chown 39999:39999 -R snapshots mainnetdb
@@ -45,6 +46,12 @@ actions:
         iptables -t nat -I PREROUTING -p tcp -m tcp --dport 80 -m comment --comment "IOTA Node" -j REDIRECT --to-ports 8081
         service iptables save
         echo "Km5hdAo6UFJFUk9VVElORyBBQ0NFUFQgWzA6MF0KOlBPU1RST1VUSU5HIEFDQ0VQVCBbMDowXQo6T1VUUFVUIEFDQ0VQVCBbMDowXQotQSBQUkVST1VUSU5HIC1wIHRjcCAtbSB0Y3AgLS1kcG9ydCA4MCAtbSBjb21tZW50IC0tY29tbWVudCAiSU9UQSBOb2RlIiAtaiBSRURJUkVDVCAtLXRvLXBvcnRzIDgwODEKQ09NTUlUCg==" | base64 -d  > /etc/sysconfig/iptables-custom
+
+      user: root
+  
+  runNode:
+    - cmd [cp]: |-
+        cd hornet
         docker run -d --restart=always -v $(pwd)/config.json:/app/config.json:ro -v $(pwd)/peering.json:/app/peering.json -v $(pwd)/mainnetdb:/app/mainnetdb --name hornet --net=host gohornet/hornet:latest
         echo "Downloading data: "
         while true; do
@@ -53,10 +60,11 @@ actions:
             echo  -n "."
             sleep 1
         done
-      user: root
  
-  success: |
-      The Node is installed and available here **[{{URI}}/dashboard]({{URI}}/dashboard)**.
-      **User**: ${globals.user}  
-      **Password**: ${globals.password} 
+      user: root
+      
+success: |-
+  The Node is installed and available here **http://${env.domain}/dashboard](http://${env.domain}/dashboard)**.
+  Admin Username : ${globals.user}    
+  Admin Password : ${globals.password}  
 

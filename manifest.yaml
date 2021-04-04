@@ -57,7 +57,7 @@ actions:
           --volume certs:/etc/nginx/certs \
           --volume vhost:/etc/nginx/vhost.d \
           --volume html:/usr/share/nginx/html \
-          --volume /app/nginx.tpl:/app/nginx.tpl:ro \
+          --volume /app/nginx.tmpl:/app/nginx.tmpl:ro \
           --volume /var/run/docker.sock:/tmp/docker.sock:ro \
           jwilder/nginx-proxy
   

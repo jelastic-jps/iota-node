@@ -1,10 +1,10 @@
-# Iota
+# IOTA
 
 <img align="left" width="100" src="images/iota-logo.svg">
 
 IOTA is an open source, feeless, and scalable distributed ledger technology, designed to support frictionless data and value transfer.  
     
-## Iota Node Package Options
+## IOTA Node Package Options
 
  - Built-in Let’s Encrypt companion for assigning SSL certificates via acme.sh
  - NGINX proxy
@@ -28,7 +28,7 @@ If required change **Environment** Name and Destination **Region** if several ar
 <img src="images/install.png" width="515">
 </p>
 
-Once the installation is completed you may proceed to the Iota dashboard by pressing **Open in Browser** button in a successful installation window.  
+Once the installation is completed you may proceed to the IOTA dashboard by pressing **Open in Browser** button in a successful installation window.  
 
 <p align="left">
 <img src="images/success.png" width="373">

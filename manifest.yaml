@@ -43,7 +43,7 @@ actions:
         chown 39999:39999 -R snapshots mainnetdb
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
         iptables -P INPUT ACCEPT
-        iptables -F 
+        iptables -P FORWARD ACCEPT
         service iptables save      
 
       user: root
@@ -53,6 +53,7 @@ actions:
          mkdir -p /app
          wget ${baseUrl}/templates/nginx.tmpl -O /app/nginx.tmpl
          docker run --detach \
+          --restart=always \
           --name nginx-proxy \
           --net=host \
           --volume certs:/etc/nginx/certs \
@@ -63,11 +64,12 @@ actions:
           jwilder/nginx-proxy
   
          docker run --detach \
+          --restart=always \
           --name nginx-proxy-letsencrypt \
           --volumes-from nginx-proxy \
           --volume /var/run/docker.sock:/var/run/docker.sock:ro \
           --volume acme:/etc/acme.sh \
-          --env "DEFAULT_EMAIL=${user.email}" \
+          --env "DEFAULT_EMAIL=ihorman@gmail.com" \
           --env "CERTS_UPDATE_INTERVAL=60" \
           jrcs/letsencrypt-nginx-proxy-companion
     
@@ -75,13 +77,13 @@ actions:
   runNode:
     - cmd [cp]: |-
         cd hornet
-        docker run -d --restart=always \
+        docker run -d \
+        --restart=always \
         -v $(pwd)/config.json:/app/config.json:ro \
         -v $(pwd)/peering.json:/app/peering.json \
         -v $(pwd)/mainnetdb:/app/mainnetdb \
         --env "VIRTUAL_HOST=${env.domain}" \
         --env "LETSENCRYPT_HOST=${env.domain}" \
-        --env "LETSENCRYPT_TEST=true" \
         --env "VIRTUAL_PORT=8081" \
         --name hornet \
         --net=host gohornet/hornet:latest

@@ -42,6 +42,7 @@ actions:
         mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}
         chown 39999:39999 -R snapshots mainnetdb
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
+        sed -i '/network_mode/a \   \ env_file: hornet_env' docker-compose.yml
         iptables -P INPUT ACCEPT
         iptables -P FORWARD ACCEPT
         service iptables save      
@@ -69,7 +70,7 @@ actions:
           --volumes-from nginx-proxy \
           --volume /var/run/docker.sock:/var/run/docker.sock:ro \
           --volume acme:/etc/acme.sh \
-          --env "DEFAULT_EMAIL=ihorman@gmail.com" \
+          --env "DEFAULT_EMAIL=${user.email}" \
           --env "CERTS_UPDATE_INTERVAL=60" \
           jrcs/letsencrypt-nginx-proxy-companion
     
@@ -77,16 +78,11 @@ actions:
   runNode:
     - cmd [cp]: |-
         cd hornet
-        docker run -d \
-        --restart=always \
-        -v $(pwd)/config.json:/app/config.json:ro \
-        -v $(pwd)/peering.json:/app/peering.json \
-        -v $(pwd)/mainnetdb:/app/mainnetdb \
-        --env "VIRTUAL_HOST=${env.domain}" \
-        --env "LETSENCRYPT_HOST=${env.domain}" \
-        --env "VIRTUAL_PORT=8081" \
-        --name hornet \
-        --net=host gohornet/hornet:latest
+        echo "VIRTUAL_HOST=${env.domain}" > hornet_env
+        echo "LETSENCRYPT_HOST=${env.domain}" >> hornet_env
+        echo "VIRTUAL_PORT=8081" >> hornet_env
+        docker-compose build 
+        docker-compose up -d
 
         echo "Downloading data: "
         while true; do

@@ -18,16 +18,15 @@ globals:
   salt: setcretsalt
 
 nodes:
-- cloudlets: 16
-  nodeGroup: cp
-  extip: true
-  nodeType: dockerengine
+  - cloudlets: 16
+    nodeGroup: cp
+    extip: true
+    nodeType: dockerengine
 
 onInstall:
   - runLEConpanion
   - setupNode
   - runNode
-
 
 actions:
   setupNode:
@@ -43,8 +42,6 @@ actions:
         chown 39999:39999 -R snapshots mainnetdb
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
         sed -i '/network_mode/a \   \ env_file: hornet_env' docker-compose.yml
-
-      user: root
   
   runLEConpanion:
     - cmd [cp]: |-
@@ -69,9 +66,7 @@ actions:
           --volume acme:/etc/acme.sh \
           --env "DEFAULT_EMAIL=${user.email}" \
           --env "CERTS_UPDATE_INTERVAL=60" \
-          jrcs/letsencrypt-nginx-proxy-companion
-          
-        user: root  
+          jrcs/letsencrypt-nginx-proxy-companion          
   
   runNode:
     - cmd [cp]: |-
@@ -88,12 +83,9 @@ actions:
             [ $? -eq 0 ] && break
             echo  -n "."
             sleep 1
-        done
-        
-      user: root
+        done        
       
 success: |-
   **Dashboard**: [https://${env.domain}](https://${env.domain}/dashboard)  
   **Username** : ${globals.user}    
   **Password** : ${globals.password}  
-

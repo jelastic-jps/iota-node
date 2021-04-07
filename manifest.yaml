@@ -43,7 +43,6 @@ actions:
         chown 39999:39999 -R snapshots mainnetdb
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
         sed -i '/network_mode/a \   \ env_file: hornet_env' docker-compose.yml
-        service iptables save      
 
       user: root
   

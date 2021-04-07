@@ -70,7 +70,8 @@ actions:
           --env "DEFAULT_EMAIL=${user.email}" \
           --env "CERTS_UPDATE_INTERVAL=60" \
           jrcs/letsencrypt-nginx-proxy-companion
-    
+          
+        user: root  
   
   runNode:
     - cmd [cp]: |-
@@ -88,7 +89,7 @@ actions:
             echo  -n "."
             sleep 1
         done
- 
+        
       user: root
       
 success: |-

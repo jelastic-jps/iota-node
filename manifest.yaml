@@ -42,7 +42,7 @@ actions:
           --volume html:/usr/share/nginx/html \
           --volume /app/nginx.tmpl:/app/nginx.tmpl:ro \
           --volume /var/run/docker.sock:/tmp/docker.sock:ro \
-          jwilder/nginx-proxy
+          nginxproxy/nginx-proxy
   
          docker run --detach \
           --restart=always \
@@ -52,7 +52,7 @@ actions:
           --volume acme:/etc/acme.sh \
           --env "DEFAULT_EMAIL=${user.email}" \
           --env "CERTS_UPDATE_INTERVAL=60" \
-          jrcs/letsencrypt-nginx-proxy-companion          
+          nginxproxy/acme-companion
   
   setupNode:
     - cmd[cp]: |-

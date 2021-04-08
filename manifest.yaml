@@ -15,13 +15,13 @@ description:
 globals:
   user: admin
   password: ${fn.password}
-  salt: setcretsalt
+  salt: ${fn.password}
 
 nodes:
-  - cloudlets: 16
+  - cloudlets: 16 #1 cloudlet = 128MiB + 400MHz
+    nodeType: dockerengine
     nodeGroup: cp
     extip: true
-    nodeType: dockerengine
 
 onInstall:
   - runLEConpanion
@@ -29,22 +29,8 @@ onInstall:
   - runNode
 
 actions:
-  setupNode:
-    - cmd [cp]: |-
-        git clone https://github.com/gohornet/hornet
-        yum install -y jq
-        cd hornet
-        pHash=$(python -c "from hashlib import sha256; print sha256('${globals.password}' + '${globals.salt}').hexdigest();")
-        [ -z $pHash ] && { echo "Could not generate hash" ;exit 1; };
-        jq --arg PASSWORD "${pHash}" '.dashboard.basicAuth.enabled = true | .dashboard.basicAuth.username = "${globals.user}" | .dashboard.basicAuth.passwordHash = $PASSWORD | .dashboard.basicAuth.passwordSalt = "${globals.salt}"'   config.json > config.json.modifed
-        [ -f "config.json.modifed" ] && mv config.json.modifed config.json
-        mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}
-        chown 39999:39999 -R snapshots mainnetdb
-        sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
-        sed -i '/network_mode/a \   \ env_file: hornet_env' docker-compose.yml
-  
   runLEConpanion:
-    - cmd [cp]: |-
+    - cmd[cp]: |-
          mkdir -p /app
          wget ${baseUrl}/templates/nginx.tmpl -O /app/nginx.tmpl
          docker run --detach \
@@ -68,8 +54,22 @@ actions:
           --env "CERTS_UPDATE_INTERVAL=60" \
           jrcs/letsencrypt-nginx-proxy-companion          
   
+  setupNode:
+    - cmd[cp]: |-
+        git clone https://github.com/gohornet/hornet
+        yum install -y jq
+        cd hornet
+        pHash=$(python -c "from hashlib import sha256; print sha256('${globals.password}' + '${globals.salt}').hexdigest();")
+        [ -z $pHash ] && { echo "Could not generate hash" ;exit 1; };
+        jq --arg PASSWORD "${pHash}" '.dashboard.basicAuth.enabled = true | .dashboard.basicAuth.username = "${globals.user}" | .dashboard.basicAuth.passwordHash = $PASSWORD | .dashboard.basicAuth.passwordSalt = "${globals.salt}"'   config.json > config.json.modifed
+        [ -f "config.json.modifed" ] && mv config.json.modifed config.json
+        mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}
+        chown 39999:39999 -R snapshots mainnetdb
+        sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
+        sed -i '/network_mode/a \   \ env_file: hornet_env' docker-compose.yml
+  
   runNode:
-    - cmd [cp]: |-
+    - cmd[cp]: |-
         cd hornet
         echo "VIRTUAL_HOST=${env.domain}" > hornet_env
         echo "LETSENCRYPT_HOST=${env.domain}" >> hornet_env

@@ -13,7 +13,7 @@ description:
     IOTA’s Tangle is an open, feeless and scalable distributed ledger, designed to support frictionless data and value transfer.
 
 categories:
-  - apps/others
+  - apps/microservices
 
 globals:
   user: admin

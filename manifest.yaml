@@ -20,7 +20,7 @@ globals:
   password: ${fn.password}
 
 nodes:
-  - cloudlets: 16 #1 cloudlet = 128MiB + 400MHz
+  - cloudlets: 32 #1 cloudlet = 128MiB + 400MHz
     nodeType: dockerengine
     nodeGroup: cp
     extip: true
@@ -58,20 +58,17 @@ actions:
 
   setupNode:
     - cmd[cp]: |-
-        git clone https://github.com/gohornet/hornet
+        git clone https://github.com/gohornet/hornet -b develop
         yum install -y jq
         cd hornet
-        cp docker-compose.yml /tmp
-        git checkout develop
         echo pHash=$(python -c "from hashlib import sha256; print sha256('${globals.password}' + '${globals.salt}').hexdigest();")
         wget ${baseUrl}/tools/passwd-tool -O /app/passwd-tool
         chmod +x /app/passwd-tool
         salt=$(openssl rand -hex 32)
-        pHash=$(/app/passwd-tool ${globals.password} $salt)
+        pHash=$(/app/passwd-tool ${globals.password} $salt | tail -n1 | awk -F ': ' '{print $2}')
         [ -z $pHash ] && { echo "Could not generate hash" ;exit 1; };
-        jq --arg PASSWORD "${pHash}" --arg SALT "${salt}" '.dashboard.auth.enabled = true | .dashboard.auth.username = "${globals.user}" | .dashboard.auth.passwordHash = $PASSWORD | .dashboard.auth.passwordSalt = $SALT"'   config.json > config.json.modifed
+        jq --arg PASSWORD "${pHash}" --arg SALT "${salt}" '.dashboard.auth.enabled = true | .dashboard.auth.username = "${globals.user}" | .dashboard.auth.passwordHash = $PASSWORD | .dashboard.auth.passwordSalt = $SALT'  config.json > config.json.modifed
         [ -f "config.json.modifed" ] && mv config.json.modifed config.json
-        [ -f /tmp/docker-compose.yml ] && mv /tmp/docker-compose.yml .
         mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}
         chown 65532:65532 -R snapshots mainnetdb
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml

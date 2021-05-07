@@ -92,6 +92,6 @@ actions:
         done
 
 success: |-
-  **Dashboard**: [https://${env.domain}](https://${env.domain}/dashboard)
+  **Dashboard**: [https://${env.domain}](https://${env.domain}/login)
   **Username** : ${globals.user}
   **Password** : ${globals.password}

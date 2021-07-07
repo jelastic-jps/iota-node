@@ -71,7 +71,7 @@ actions:
 
   setupNode:
     - cmd[cp]: |-
-        git clone https://github.com/gohornet/hornet -b develop
+        git clone https://github.com/gohornet/hornet -b main
         yum install -y jq
         cd hornet
         echo pHash=$(python -c "from hashlib import sha256; print sha256('${globals.password}' + '${globals.salt}').hexdigest();")

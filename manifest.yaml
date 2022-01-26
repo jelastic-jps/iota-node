@@ -71,7 +71,7 @@ actions:
 
   setupNode:
     - cmd[cp]: |-
-        git clone https://github.com/gohornet/hornet -b main
+        git clone https://github.com/gohornet/hornet -b mainnet
         yum install -y jq
         cd hornet
         echo pHash=$(python -c "from hashlib import sha256; print sha256('${globals.password}' + '${globals.salt}').hexdigest();")
@@ -82,8 +82,8 @@ actions:
         [ -z $pHash ] && { echo "Could not generate hash" ;exit 1; };
         jq --arg PASSWORD "${pHash}" --arg SALT "${salt}" '.dashboard.auth.enabled = true | .dashboard.auth.username = "${globals.user}" | .dashboard.auth.passwordHash = $PASSWORD | .dashboard.auth.passwordSalt = $SALT'  config.json > config.json.modifed
         [ -f "config.json.modifed" ] && mv config.json.modifed config.json
-        mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet}
-        chown 65532:65532 -R snapshots mainnetdb
+        mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet} p2pstore
+        chown 65532:65532 -R snapshots mainnetdb p2pstore
         sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
         sed -i '/network_mode/a \   \ env_file: hornet_env' docker-compose.yml
 

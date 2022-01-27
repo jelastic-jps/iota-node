@@ -109,7 +109,7 @@ actions:
          cd hornet
          curl -H "Content-Type: application/json" -X POST "https://nodesharing.wisewolf.de/api/getpeers.php" \
          --data '{"peerAdress":"${env.domain}","port":"15600","apiPort":"14265", "peerID":"12D3KooWSMZauLZBKR9GfDsxeuvVXToiAFRV48EwR2RPo8JKYBQs","network":"${settings.network}"}' \
-         | jq | sed  's/peerID/multiAddress/g' | sed  's/records/peers/g' > peering.json
+         | jq | sed  's/peerID/multiAddress/g' | sed  's/records/peers/g' | sed 's|//|/|g' > peering.json
          docker restart $(docker ps -a --format "{{.Names}}" --filter name=^/hornet)   
 
 success: |-

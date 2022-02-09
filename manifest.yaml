@@ -74,12 +74,11 @@ actions:
         git clone https://github.com/gohornet/hornet -b mainnet
         yum install -y jq
         cd hornet
-        echo pHash=$(python -c "from hashlib import sha256; print sha256('${globals.password}' + '${globals.salt}').hexdigest();")
         wget ${baseUrl}/tools/passwd-tool -O /app/passwd-tool
         chmod +x /app/passwd-tool
         salt=$(openssl rand -hex 32)
         pHash=$(/app/passwd-tool ${globals.password} $salt | tail -n1 | awk -F ': ' '{print $2}')
-        [ -z $pHash ] && { echo "Could not generate hash" ;exit 1; };
+        [ -z "$pHash" ] && { echo "Could not generate hash" ;exit 1; };
         jq --arg PASSWORD "${pHash}" --arg SALT "${salt}" '.dashboard.auth.enabled = true | .dashboard.auth.username = "${globals.user}" | .dashboard.auth.passwordHash = $PASSWORD | .dashboard.auth.passwordSalt = $SALT'  config.json > config.json.modifed
         [ -f "config.json.modifed" ] && mv config.json.modifed config.json
         mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet} p2pstore
@@ -95,7 +94,6 @@ actions:
         echo "VIRTUAL_PORT=8081" >> hornet_env
         docker-compose build
         docker-compose up -d
-
         echo "Downloading data: "
         while true; do
             netstat -nlpt | grep -q 8081
@@ -107,10 +105,13 @@ actions:
   connectToNetwork:
      - cmd[cp]: |-
          cd hornet
-         curl -H "Content-Type: application/json" -X POST "https://nodesharing.wisewolf.de/api/getpeers.php" \
-         --data '{"peerAdress":"${env.domain}","port":"15600","apiPort":"14265", "peerID":"12D3KooWSMZauLZBKR9GfDsxeuvVXToiAFRV48EwR2RPo8JKYBQs","network":"${settings.network}"}' \
-         | jq | sed  's/peerID/multiAddress/g' | sed  's/records/peers/g' | sed 's|//|/|g' > peering.json
-         docker restart $(docker ps -a --format "{{.Names}}" --filter name=^/hornet)   
+         ctname=$(docker ps -a --format "{{.Names}}" --filter name=^/hornet)
+         peerID=$(docker logs $ctname  2>&1| grep 'peer configured' | awk -F: '{print $NF}')
+         [ -z "$peerID" ] && { echo "Could get peerID" ;exit 1; };
+         val=$(curl -H "Content-Type: application/json" -X POST "https://nodesharing.wisewolf.de/api/getpeers.php" \
+         --data '{"peerAdress":"${env.domain}","port":"15600","apiPort":"14265", "peerID":"$peerID","network":"${settings.network}"}' | jq );
+         result=$?; 
+         if [ $result -eq 0 ]; then echo $val | sed  's/peerID/multiAddress/g' | sed  's/records/peers/g' | sed 's|//|/|g' > peering.json; docker restart $ctname;fi
 
 success: |-
   **Dashboard**: [https://${env.domain}](https://${env.domain}/login)

@@ -114,6 +114,6 @@ actions:
          if [ $result -eq 0 ]; then echo $val | sed  's/peerID/multiAddress/g' | sed  's/records/peers/g' | sed 's|//|/|g' > peering.json; docker restart $ctname;fi
 
 success: |-
-  **Dashboard**: [https://${env.domain}](https://${env.domain}/login)
-  **Username** : ${globals.user}
-  **Password** : ${globals.password}
+  **Dashboard**: [https://${env.domain}](https://${env.domain}/login)  
+  **Username** : ${globals.user}  
+  **Password** : ${globals.password}  

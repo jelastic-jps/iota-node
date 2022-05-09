@@ -111,8 +111,8 @@ actions:
          val=$(curl -H "Content-Type: application/json" -X POST "https://nodesharing.wisewolf.de/api/getpeers.php" \
          --data '{"peerAdress":"${env.domain}","port":"15600","apiPort":"14265", "peerID":"$peerID","network":"${settings.network}"}' | jq );
          result=$?;
-         echo $val>/tmp/mainfest
-         if [ $result -eq 0 ]; then echo $val | sed -re "s/\\\$peerID/$peerID/g" -e 's/peerID/multiAddress/g' -e 's/records/peers/g' -e 's|//|/|g' -e 's| ||g' | jq > peering.json; docker restart $ctname;fi
+         echo $val>/tmp/mainfest; echo $peerID>>/tmp/mainfest
+         if [ $result -eq 0 ]; then echo $val | sed -re 's/\$peerID/'$peerID'/g' -e 's/peerID/multiAddress/g' -e 's/records/peers/g' -e 's|//|/|g' -e 's| ||g' | jq > peering.json; docker restart $ctname;fi
 
 success: |-
   **Dashboard**: [https://${env.domain}](https://${env.domain}/login)

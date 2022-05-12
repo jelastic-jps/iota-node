@@ -106,12 +106,12 @@ actions:
      - cmd[cp]: |-
          cd hornet
          ctname=$(docker ps -a --format "{{.Names}}" --filter name=^/hornet)
-         peerID=$(docker logs $ctname  2>&1| grep 'peer configured' | awk -F: '{print $NF}')
+         peerID=$(docker logs $ctname  2>&1| grep -m1 'peer configured' | awk -F: '{print $NF}')
          [ -z "$peerID" ] && { echo "Could get peerID" ;exit 1; };
          val=$(curl -H "Content-Type: application/json" -X POST "https://nodesharing.wisewolf.de/api/getpeers.php" \
-         --data '{"peerAdress":"${env.domain}","port":"15600","apiPort":"14265", "peerID":"$peerID","network":"${settings.network}"}' | jq );
-         result=$?; 
-         if [ $result -eq 0 ]; then echo $val | sed  's/peerID/multiAddress/g' | sed  's/records/peers/g' | sed 's|//|/|g' > peering.json; docker restart $ctname;fi
+         --data '{"peerAdress":"${env.domain}","port":"15600","apiPort":"14265", "peerID":"$peerID","network":"${settings.network}"}' | jq . |tee -a /tmp/mainfest );
+         result=$?;
+         if [ $result -eq 0 ]; then echo $val | sed -re "s/\\\$peerID/$peerID/g" -e 's/peerID/multiAddress/g' -e 's/records/peers/g' -e 's|//|/|g' -e 's|\\\/\\\/|/|g' -e 's| ||g' | jq > peering.json; docker restart $ctname;fi
 
 success: |-
   **Dashboard**: [https://${env.domain}](https://${env.domain}/login)  

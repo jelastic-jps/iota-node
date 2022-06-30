@@ -71,7 +71,7 @@ actions:
 
   setupNode:
     - cmd[cp]: |-
-        git clone https://github.com/gohornet/hornet -b mainnet
+        git clone https://github.com/gohornet/hornet -b production
         yum install -y jq
         cd hornet
         wget ${baseUrl}/tools/passwd-tool -O /app/passwd-tool

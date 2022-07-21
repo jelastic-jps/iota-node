@@ -25,7 +25,7 @@ Click the **DEPLOY TO JELASTIC** button, specify your email address within the w
 If required change **Environment** Name and Destination **Region** if several are available.
 
 <p align="left">
-<img src="images/install.png" width="515">
+<img src="images/install-new-logo.png" width="515">
 </p>
 
 Once the installation is completed you may proceed to the IOTA dashboard by pressing **Open in Browser** button in a successful installation window.  

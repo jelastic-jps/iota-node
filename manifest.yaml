@@ -4,7 +4,7 @@ version: 1.4
 id: iota
 name: IOTA Node 
 baseUrl: https://raw.githubusercontent.com/jelastic-jps/iota-node/main
-logo: images/iota-logo-white.svg?sanitize=true
+logo: images/iota-logo-black.png
 
 homepage: https://www.iota.org/
 description:

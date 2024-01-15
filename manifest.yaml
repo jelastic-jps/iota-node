@@ -33,87 +33,42 @@ settings:
         values:
           mainnet: MainNet
           testnet: TestNet
-          private: PrivateNet
+          shimmer: Shimmer
         hideLabel: false
         default: mainnet
 
 onInstall:
-  - runLEConpanion
   - setupNode
   - runNode
-  - connectToNetwork
 
 actions:
-  runLEConpanion:
-    - cmd[cp]: |-
-         mkdir -p /app
-         wget ${baseUrl}/templates/nginx.tmpl -O /app/nginx.tmpl
-         docker run --detach \
-          --restart=always \
-          --name nginx-proxy \
-          --net=host \
-          --volume certs:/etc/nginx/certs \
-          --volume vhost:/etc/nginx/vhost.d \
-          --volume html:/usr/share/nginx/html \
-          --volume /app/nginx.tmpl:/app/nginx.tmpl:ro \
-          --volume /var/run/docker.sock:/tmp/docker.sock:ro \
-          nginxproxy/nginx-proxy
-
-         docker run --detach \
-          --restart=always \
-          --name nginx-proxy-letsencrypt \
-          --volumes-from nginx-proxy \
-          --volume /var/run/docker.sock:/var/run/docker.sock:ro \
-          --volume acme:/etc/acme.sh \
-          --env "DEFAULT_EMAIL=${user.email}" \
-          --env "CERTS_UPDATE_INTERVAL=60" \
-          nginxproxy/acme-companion
-
   setupNode:
     - cmd[cp]: |-
-        git clone https://github.com/gohornet/hornet -b production
-        yum install -y jq
-        cd hornet
-        wget ${baseUrl}/tools/passwd-tool -O /app/passwd-tool
+        mkdir node-docker-setup && cd node-docker-setup && curl -L https://node-docker-setup.iota.org/stardust | tar -zx
+        mkdir /app && wget ${baseUrl}/tools/passwd-tool -O /app/passwd-tool
         chmod +x /app/passwd-tool
+        wget ${baseUrl}/templates/docker-compose-custom.yml -O docker-compose-custom.yml
         salt=$(openssl rand -hex 32)
         pHash=$(/app/passwd-tool ${globals.password} $salt | tail -n1 | awk -F ': ' '{print $2}')
         [ -z "$pHash" ] && { echo "Could not generate hash" ;exit 1; };
-        jq --arg PASSWORD "${pHash}" --arg SALT "${salt}" '.dashboard.auth.enabled = true | .dashboard.auth.username = "${globals.user}" | .dashboard.auth.passwordHash = $PASSWORD | .dashboard.auth.passwordSalt = $SALT'  config.json > config.json.modifed
-        [ -f "config.json.modifed" ] && mv config.json.modifed config.json
-        mkdir -p mainnetdb snapshots/{mainnet,devnet,comnet} p2pstore
-        chown 65532:65532 -R snapshots mainnetdb p2pstore
-        sed -i '/network_mode/a \   \ restart: always' docker-compose.yml
-        sed -i '/network_mode/a \   \ env_file: hornet_env' docker-compose.yml
+        cp env_template .env
+        sed -i 's|#DASHBOARD_PASSWORD=.*|DASHBOARD_PASSWORD='${pHash}'|g' .env
+        sed -i 's|#DASHBOARD_SALT=.*|DASHBOARD_SALT='${salt}'|g' .env
+        sed -i 's|#DASHBOARD_USERNAME=.*|DASHBOARD_USERNAME=admin|g' .env
+        sed -i 's/#NODE_HOST=[0-9]\+.[0-9]\+.[0-9]\+.[0-9]\+/NODE_HOST=${nodes.cp.extips[0]}/g' .env
+        sed -i 's|#NODE_HOST=node.*|NODE_HOST=${env.domain}|g' .env
+        sed -i 's|#ACME_EMAIL=.*|ACME_EMAIL=${user.email}|g' .env
+        sed -i 's|#COMPOSE_FILE=.*|COMPOSE_FILE=docker-compose.yml:docker-compose-https.yml:docker-compose-custom.yml|g' .env
+        sed -i 's|#HORNET_CONFIG_FILE=config_${settings.network}.json|HORNET_CONFIG_FILE=config_${settings.network}.json|g' .env
+        ./prepare_docker.sh
 
   runNode:
     - cmd[cp]: |-
-        cd hornet
-        echo "VIRTUAL_HOST=${env.domain}" > hornet_env
-        echo "LETSENCRYPT_HOST=${env.domain}" >> hornet_env
-        echo "VIRTUAL_PORT=8081" >> hornet_env
+        cd node-docker-setup
         docker-compose build
         docker-compose up -d
-        echo "Downloading data: "
-        while true; do
-            netstat -nlpt | grep -q 8081
-            [ $? -eq 0 ] && break
-            echo  -n "."
-            sleep 1
-        done
         
-  connectToNetwork:
-     - cmd[cp]: |-
-         cd hornet
-         ctname=$(docker ps -a --format "{{.Names}}" --filter name=^/hornet)
-         peerID=$(docker logs $ctname  2>&1| grep -m1 'peer configured' | awk -F: '{print $NF}')
-         [ -z "$peerID" ] && { echo "Could get peerID" ;exit 1; };
-         val=$(curl -H "Content-Type: application/json" -k -X POST "https://nodesharing.wisewolf.de/api/getpeers.php" \
-         --data '{"peerAdress":"${env.domain}","port":"15600","apiPort":"14265", "peerID":"$peerID","network":"${settings.network}"}' | jq . |tee -a /tmp/mainfest );
-         result=$?;
-         if [ $result -eq 0 ]; then echo $val | sed -re "s/\\\$peerID/$peerID/g" -e 's/peerID/multiAddress/g' -e 's/records/peers/g' -e 's|//|/|g' -e 's|\\\/\\\/|/|g' -e 's| ||g' | jq > peering.json; docker restart $ctname;fi
-
 success: |-
   **Dashboard**: [https://${env.domain}/dashboard/login](https://${env.domain}/dashboard/login)  
   **Username** : ${globals.user}  
-  **Password** : ${globals.password}  
+  **Password** : ${globals.password}

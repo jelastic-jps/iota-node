@@ -44,7 +44,7 @@ onInstall:
 actions:
   setupNode:
     - cmd[cp]: |-
-        mkdir node-docker-setup && cd node-docker-setup && curl -L https://node-docker-setup.iota.org/stardust | tar -zx
+        mkdir node-docker-setup && cd node-docker-setup && curl -L https://node-docker-setup.iota.org/iota | tar -zx
         mkdir /app && wget ${baseUrl}/tools/passwd-tool -O /app/passwd-tool
         chmod +x /app/passwd-tool
         wget ${baseUrl}/templates/docker-compose-custom.yml -O docker-compose-custom.yml
